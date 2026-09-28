@@ -1,0 +1,2947 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>Metal Shatter Arena</title>
+    <style>
+      :root {
+        --bg: #0a0a0f;
+        color-scheme: dark;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: none;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        background: var(--bg);
+        overflow: hidden;
+        font-family: ui-monospace, monospace;
+      }
+      #c {
+        display: block;
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+      }
+      #hud {
+        position: fixed;
+        top: env(safe-area-inset-top, 0);
+        left: 0;
+        right: 0;
+        padding: 10px 14px;
+        color: #eaffff;
+        pointer-events: none;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        background: linear-gradient(180deg, rgba(0, 20, 25, 0.62), transparent);
+        backdrop-filter: blur(6px);
+        border-bottom: 1px solid rgba(0, 255, 255, 0.18);
+        z-index: 2;
+        text-shadow: 0 0 8px #0ff6;
+      }
+      .hudrow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 18px;
+        align-items: center;
+      }
+      .meters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        margin-top: 6px;
+        align-items: center;
+      }
+      .meter {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .meter span {
+        opacity: 0.75;
+        font-size: 11px;
+      }
+      #heat,
+      #shld {
+        width: 140px;
+        height: 10px;
+        background: #0006;
+        border: 1px solid #0ff5;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      #heatfill {
+        height: 100%;
+        background: linear-gradient(90deg, #00ff9c, #ffe14a, #ff3b3b);
+        width: 0%;
+        box-shadow: 0 0 8px #0f08;
+        will-change: width;
+      }
+      #shldfill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #003344, #00e5ff);
+        box-shadow: 0 0 8px #0ff8;
+        will-change: width;
+      }
+      .stick {
+        position: fixed;
+        bottom: max(20px, env(safe-area-inset-bottom));
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(0, 255, 255, 0.06);
+        border: 1px solid rgba(0, 255, 255, 0.35);
+        backdrop-filter: blur(3px);
+        z-index: 3;
+      }
+      body:not(.touch) .stick {
+        display: none;
+      }
+      #wpn {
+        position: fixed;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        left: 50%;
+        transform: translateX(-50%);
+        color: #0ff;
+        font-size: 12px;
+        pointer-events: auto;
+        background: rgba(0, 20, 25, 0.55);
+        border: 1px solid rgba(0, 255, 255, 0.35);
+        padding: 8px 12px;
+        min-height: 44px;
+        border-radius: 6px;
+        backdrop-filter: blur(6px);
+        z-index: 3;
+        cursor: pointer;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: calc(100vw - 168px);
+      }
+      #wpn b {
+        color: #fff;
+        text-shadow: 0 0 8px #0ff;
+      }
+      .stick .nub {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(0, 255, 255, 0.4);
+        left: 35px;
+        top: 35px;
+        box-shadow: 0 0 10px #0ff8;
+        pointer-events: none;
+      }
+      #l {
+        left: 20px;
+      }
+      #r {
+        right: 20px;
+      }
+      #shbtn {
+        position: fixed;
+        bottom: max(150px, calc(env(safe-area-inset-bottom) + 140px));
+        right: 20px;
+        min-width: 56px;
+        min-height: 56px;
+        border-radius: 50%;
+        color: #0ff;
+        background: rgba(0, 20, 25, 0.55);
+        border: 1px solid rgba(0, 255, 255, 0.4);
+        z-index: 3;
+        pointer-events: auto;
+        font:
+          12px ui-monospace,
+          monospace;
+        cursor: pointer;
+        display: none;
+      }
+      body.touch #shbtn {
+        display: block;
+      }
+      #shbtn.on {
+        background: rgba(0, 229, 255, 0.35);
+        box-shadow: 0 0 14px #0ff8;
+      }
+      #pause {
+        position: fixed;
+        top: max(10px, env(safe-area-inset-top));
+        right: 10px;
+        color: #0ff;
+        background: rgba(0, 20, 25, 0.5);
+        border: 1px solid rgba(0, 255, 255, 0.4);
+        min-width: 44px;
+        min-height: 44px;
+        padding: 6px 12px;
+        pointer-events: auto;
+        font-size: 16px;
+        border-radius: 6px;
+        backdrop-filter: blur(6px);
+        z-index: 4;
+        cursor: pointer;
+        box-shadow: 0 0 12px #0ff3;
+      }
+      #menu,
+      #gameover {
+        position: fixed;
+        inset: 0;
+        background: #000c;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 10;
+      }
+      #menu {
+        color: #fff;
+      }
+      #gameover {
+        color: #f55;
+        z-index: 11;
+      }
+      #menu button,
+      #gameover button {
+        padding: 10px 24px;
+        min-height: 44px;
+        min-width: 120px;
+        background: rgba(0, 20, 25, 0.7);
+        border: 1px solid #0ff;
+        color: #0ff;
+        font-family: inherit;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      #gameover button {
+        background: rgba(20, 0, 0, 0.7);
+        border-color: #f55;
+        color: #f55;
+      }
+      #combo {
+        position: fixed;
+        top: 42%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ff0;
+        font-size: 28px;
+        pointer-events: none;
+        opacity: 0;
+        text-shadow: 0 0 10px #f80;
+        z-index: 2;
+      }
+      #combo.pop {
+        animation: pop 0.25s ease-out;
+      }
+      @keyframes pop {
+        0% {
+          transform: translate(-50%, -50%) scale(1.6);
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+      #flash {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(
+          circle,
+          rgba(255, 0, 0, 0) 55%,
+          rgba(255, 0, 0, 0.45) 100%
+        );
+        opacity: 0;
+        pointer-events: none;
+        z-index: 5;
+      }
+      #flash.hit {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <div id="hud">
+      <div class="hudrow">
+        WAVE <span id="wave">1</span> | HP <span id="hp">100</span> | SCORE
+        <span id="score">0</span>
+      </div>
+      <div class="meters">
+        <div class="meter">
+          <span>HEAT</span>
+          <div id="heat"><div id="heatfill"></div></div>
+        </div>
+        <div class="meter">
+          <span>SHIELD</span>
+          <div id="shld"><div id="shldfill"></div></div>
+        </div>
+      </div>
+    </div>
+    <div id="combo"></div>
+    <div id="flash"></div>
+    <div id="pause" aria-label="Pause">II</div>
+    <div id="menu">
+      <h2>PAUSED</h2>
+      <button id="bres" type="button">Resume</button
+      ><button id="brestart" type="button">Restart</button
+      ><button id="bsound" type="button">Sound: On</button>
+    </div>
+    <div id="gameover">
+      <h2>MECH DESTROYED</h2>
+      <p id="finalwave"></p>
+      <button id="brestart2" type="button">Restart</button>
+    </div>
+    <div class="stick" id="l"><div class="nub"></div></div>
+    <div class="stick" id="r"><div class="nub"></div></div>
+    <button id="shbtn" type="button" aria-label="Shield">SHIELD</button>
+    <div id="wpn">[1]AUTOCANNON [2]PLASMA [3]ROCKET</div>
+    <script>
+      (function () {
+        const cv = document.getElementById("c"),
+          ctx = cv.getContext("2d", { alpha: false });
+        let W = 1,
+          H = 1,
+          DPR = Math.min(devicePixelRatio || 1, 2);
+        function resize() {
+          DPR = Math.min(devicePixelRatio || 1, 2);
+          const vv = window.visualViewport;
+          const nW = ((vv && vv.width) || innerWidth) | 0,
+            nH = ((vv && vv.height) || innerHeight) | 0;
+          const bw = (nW * DPR) | 0,
+            bh = (nH * DPR) | 0;
+          W = nW;
+          H = nH;
+          cv.style.width = W + "px";
+          cv.style.height = H + "px";
+          cv.style.left = ((vv && vv.offsetLeft) || 0) + "px";
+          cv.style.top = ((vv && vv.offsetTop) || 0) + "px";
+          if (cv.width === bw && cv.height === bh) return;
+          cv.width = bw;
+          cv.height = bh;
+          ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+          ctx.imageSmoothingEnabled = false;
+        }
+        addEventListener("resize", resize);
+        addEventListener("orientationchange", resize);
+        if (window.visualViewport) {
+          visualViewport.addEventListener("resize", resize);
+          visualViewport.addEventListener("scroll", resize);
+        }
+        resize();
+        cv.addEventListener("contextlost", (e) => e.preventDefault());
+        cv.addEventListener("contextrestored", () => resize());
+        addEventListener(
+          "touchstart",
+          () => {
+            document.body.classList.add("touch");
+          },
+          { once: true, passive: true },
+        );
+
+        const WW = 2000,
+          WH = 1200,
+          PR = 16,
+          ACCEL = 520,
+          FRICTION = 5.5,
+          MAXSPD = 150,
+          MAX_RANGE = 560;
+        const EMASK = 96;
+        const hudHp = document.getElementById("hp"),
+          hudWave = document.getElementById("wave"),
+          hudScore = document.getElementById("score");
+        const heatFill = document.getElementById("heatfill"),
+          shldFill = document.getElementById("shldfill"),
+          wpnEl = document.getElementById("wpn"),
+          comboEl = document.getElementById("combo");
+        const flashEl = document.getElementById("flash"),
+          menuEl = document.getElementById("menu"),
+          goEl = document.getElementById("gameover");
+        const finalWaveEl = document.getElementById("finalwave");
+        let lastHp = -1,
+          lastHeat = -1,
+          lastWave = -1,
+          lastScore = -1,
+          lastWpn = "",
+          lastShld = -1;
+
+        let actx = null,
+          soundOn = true,
+          noiseBufCache = null,
+          audioReady = 0;
+        const loops = [];
+        let master = null,
+          comp = null;
+        function ac() {
+          if (!audioReady) return null;
+          if (!actx) {
+            actx = new (window.AudioContext || window.webkitAudioContext)();
+            try {
+              comp = actx.createDynamicsCompressor();
+              comp.threshold.value = -18;
+              comp.knee.value = 12;
+              comp.ratio.value = 8;
+              comp.attack.value = 0.003;
+              comp.release.value = 0.12;
+              master = actx.createGain();
+              master.gain.value = 0.85;
+              comp.connect(master);
+              master.connect(actx.destination);
+            } catch (e) {}
+          }
+          if (actx.state === "suspended") actx.resume().catch(() => {});
+          return actx;
+        }
+        function unlockAudio() {
+          audioReady = 1;
+          try {
+            const a = ac();
+            if (a && a.state === "suspended") a.resume().catch(() => {});
+          } catch (e) {}
+        }
+        function noiseBuf() {
+          const a = ac();
+          if (!a) return null;
+          if (noiseBufCache) return noiseBufCache;
+          const buf = a.createBuffer(1, a.sampleRate * 0.4, a.sampleRate);
+          const d = buf.getChannelData(0);
+          for (let i = 0; i < d.length; i++)
+            d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+          noiseBufCache = buf;
+          return buf;
+        }
+        function dest() {
+          return master || (actx && actx.destination);
+        }
+        function spatialChain(a, x, y) {
+          const gn = a.createGain();
+          let pan = null;
+          if (x === undefined) {
+            gn.gain.value = 1;
+            gn.connect(dest());
+            gn._kill = () => {
+              try {
+                gn.disconnect();
+              } catch (e) {}
+            };
+            return gn;
+          }
+          const dx = x - player.x,
+            dy = y - player.y,
+            dist = Math.hypot(dx, dy);
+          gn.gain.value = Math.max(0, 1 - dist / MAX_RANGE);
+          if (a.createStereoPanner) {
+            pan = a.createStereoPanner();
+            pan.pan.value = Math.max(-1, Math.min(1, dx / 420));
+            gn.connect(pan);
+            pan.connect(dest());
+          } else gn.connect(dest());
+          gn._kill = () => {
+            try {
+              gn.disconnect();
+              if (pan) pan.disconnect();
+            } catch (e) {}
+          };
+          return gn;
+        }
+        let sndN = 0;
+        function beep(f, d, type, g, x, y) {
+          if (!soundOn || sndN > 6) return;
+          try {
+            const a = ac();
+            if (!a) return;
+            const o = a.createOscillator(),
+              gn = a.createGain(),
+              out = spatialChain(a, x, y);
+            o.type = type || "square";
+            o.frequency.value = f;
+            gn.gain.value = g || 0.12;
+            o.connect(gn);
+            gn.connect(out);
+            let started = 0;
+            o.onended = () => {
+              if (started) sndN = Math.max(0, sndN - 1);
+              try {
+                o.disconnect();
+                gn.disconnect();
+                out._kill && out._kill();
+              } catch (e) {}
+            };
+            o.start();
+            started = 1;
+            sndN++;
+            gn.gain.exponentialRampToValueAtTime(0.001, a.currentTime + d);
+            o.stop(a.currentTime + d);
+          } catch (e) {}
+        }
+        function sndShot(x, y, spd) {
+          const p = spd ? Math.min(1.45, 0.85 + spd / 520) : 1;
+          beep((220 + Math.random() * 40) * p, 0.06, "square", 0.1, x, y);
+        }
+        function sndCrunch(int, x, y, spd) {
+          if (!soundOn) return;
+          try {
+            const a = ac();
+            if (!a) return;
+            const nb = noiseBuf();
+            if (!nb) return;
+            const src = a.createBufferSource();
+            src.buffer = nb;
+            const f = a.createBiquadFilter();
+            f.type = "bandpass";
+            const vel = spd ? Math.min(1.6, 0.7 + spd / 400) : 1;
+            f.frequency.value = (600 + 500 * int) * vel;
+            f.Q.value = 0.7;
+            const gn = a.createGain();
+            gn.gain.value = 0.22 * int;
+            const out = spatialChain(a, x, y);
+            src.connect(f);
+            f.connect(gn);
+            gn.connect(out);
+            src.onended = () => {
+              try {
+                src.disconnect();
+                f.disconnect();
+                gn.disconnect();
+                out._kill && out._kill();
+              } catch (e) {}
+            };
+            src.start();
+            gn.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.14);
+            src.stop(a.currentTime + 0.15);
+          } catch (e) {}
+        }
+        function sndExplo(sc, x, y) {
+          if (!soundOn) return;
+          try {
+            const a = ac();
+            if (!a) return;
+            const nb = noiseBuf();
+            if (!nb) return;
+            const src = a.createBufferSource();
+            src.buffer = nb;
+            const f = a.createBiquadFilter();
+            f.type = "lowpass";
+            f.frequency.setValueAtTime(2400, a.currentTime);
+            f.frequency.exponentialRampToValueAtTime(90, a.currentTime + 0.45);
+            const gn = a.createGain();
+            gn.gain.value = 0.32 * sc;
+            const out = spatialChain(a, x, y);
+            src.connect(f);
+            f.connect(gn);
+            gn.connect(out);
+            src.onended = () => {
+              try {
+                src.disconnect();
+                f.disconnect();
+                gn.disconnect();
+                out._kill && out._kill();
+              } catch (e) {}
+            };
+            src.start();
+            gn.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.5);
+            src.stop(a.currentTime + 0.5);
+          } catch (e) {}
+          beep(55 * sc, 0.4, "sine", 0.28 * sc, x, y);
+        }
+        function sndHeat() {
+          beep(880, 0.12, "sine", 0.1);
+        }
+        let plasmaOsc = null,
+          plasmaGain = null;
+        function plasmaHumStart() {
+          if (!soundOn || plasmaOsc || player.overheat || player.dead) return;
+          try {
+            const a = ac();
+            if (!a) return;
+            plasmaOsc = a.createOscillator();
+            plasmaOsc.type = "sawtooth";
+            plasmaOsc.frequency.value = 170;
+            plasmaGain = a.createGain();
+            plasmaGain.gain.value = 0.0001;
+            plasmaOsc.connect(plasmaGain);
+            plasmaGain.connect(dest());
+            plasmaOsc.start();
+            plasmaGain.gain.linearRampToValueAtTime(0.07, a.currentTime + 0.05);
+            loops.length = 0;
+            loops.push(plasmaOsc);
+          } catch (e) {}
+        }
+        function plasmaHumStop() {
+          if (!plasmaOsc) return;
+          const osc = plasmaOsc,
+            gn = plasmaGain;
+          try {
+            const a = ac();
+            if (gn)
+              gn.gain.linearRampToValueAtTime(0.0001, a.currentTime + 0.06);
+            osc.stop(a.currentTime + 0.08);
+            setTimeout(() => {
+              try {
+                osc.disconnect();
+                if (gn) gn.disconnect();
+              } catch (e) {}
+            }, 120);
+          } catch (e) {
+            try {
+              osc.disconnect();
+              if (gn) gn.disconnect();
+            } catch (e2) {}
+          }
+          const idx = loops.indexOf(osc);
+          if (idx !== -1) loops.splice(idx, 1);
+          plasmaOsc = null;
+          plasmaGain = null;
+        }
+        function stopAllLoops() {
+          plasmaHumStop();
+          loops.length = 0;
+        }
+
+        const world = document.createElement("canvas");
+        world.width = WW;
+        world.height = WH;
+        const wctx = world.getContext("2d");
+        wctx.imageSmoothingEnabled = false;
+        // Collision is backed by a plain typed array instead of ctx.getImageData().
+        // getImageData() forces a synchronous GPU->CPU readback; calling it dozens of
+        // times per frame (every bullet step, every plasma tick, every worldBounce)
+        // was the main cause of frame drops during multi-enemy fights and of input
+        // (mouse) events appearing to "freeze then catch up" once the main thread
+        // got backed up. A Uint8Array lookup is essentially free by comparison.
+        const solidMap = new Uint8Array(WW * WH);
+        // Real pathfinding (BFS flow-field), replacing the bounded-lookahead
+        // steering limitation entirely. One BFS from the player's cell over a
+        // coarse grid gives every enemy a guaranteed route around ANY obstacle
+        // shape/size the map can produce (no more "big enough wall stumps it").
+        // Cheap even every frame: ~3800 cells, shared by all enemies.
+        const NAV_CELL = 25,
+          NAV_W = Math.ceil(WW / NAV_CELL),
+          NAV_H = Math.ceil(WH / NAV_CELL);
+        const navBlocked = new Uint8Array(NAV_W * NAV_H);
+        const navDist = new Int32Array(NAV_W * NAV_H);
+        const navQX = new Int32Array(NAV_W * NAV_H),
+          navQY = new Int32Array(NAV_W * NAV_H);
+        function navIdx(cx, cy) {
+          return cy * NAV_W + cx;
+        }
+        function navRebuildRect(x0, y0, x1, y1) {
+          const cx0 = Math.max(0, (x0 / NAV_CELL) | 0),
+            cy0 = Math.max(0, (y0 / NAV_CELL) | 0);
+          const cx1 = Math.min(NAV_W - 1, (x1 / NAV_CELL) | 0),
+            cy1 = Math.min(NAV_H - 1, (y1 / NAV_CELL) | 0);
+          for (let cy = cy0; cy <= cy1; cy++)
+            for (let cx = cx0; cx <= cx1; cx++) {
+              const x = cx * NAV_CELL + NAV_CELL * 0.5,
+                y = cy * NAV_CELL + NAV_CELL * 0.5;
+              // Inflate obstacles by ~the biggest enemy radius (config-space): a
+              // point-sampled cell can read "clear" right next to a corner that an
+              // entity's actual collision circle still clips, which fights the flow
+              // field every frame (it says "go this way", worldBounce shoves back)
+              // and stalls right at the last few px of a detour - exactly the
+              // corner/notch stall this pathfinding was meant to eliminate.
+              navBlocked[navIdx(cx, cy)] = circleHitsSolid(x, y, 26) ? 1 : 0;
+            }
+        }
+        function navBuildAll() {
+          navRebuildRect(0, 0, WW, WH);
+        }
+        let navDirty = 1;
+        function computeFlowField() {
+          navDist.fill(-1);
+          const scx = Math.min(
+            NAV_W - 1,
+            Math.max(0, (player.x / NAV_CELL) | 0),
+          );
+          const scy = Math.min(
+            NAV_H - 1,
+            Math.max(0, (player.y / NAV_CELL) | 0),
+          );
+          let qs = 0,
+            qe = 0;
+          navDist[navIdx(scx, scy)] = 0;
+          navQX[qe] = scx;
+          navQY[qe] = scy;
+          qe++;
+          while (qs < qe) {
+            const cx = navQX[qs],
+              cy = navQY[qs];
+            qs++;
+            const d = navDist[navIdx(cx, cy)];
+            for (let k = 0; k < 4; k++) {
+              const nx = cx + (k === 0 ? 1 : k === 1 ? -1 : 0),
+                ny = cy + (k === 2 ? 1 : k === 3 ? -1 : 0);
+              if (nx < 0 || ny < 0 || nx >= NAV_W || ny >= NAV_H) continue;
+              const idx = navIdx(nx, ny);
+              if (navBlocked[idx] || navDist[idx] >= 0) continue;
+              navDist[idx] = d + 1;
+              navQX[qe] = nx;
+              navQY[qe] = ny;
+              qe++;
+            }
+          }
+        }
+        function flowAngle(en) {
+          const cx = Math.min(NAV_W - 1, Math.max(0, (en.x / NAV_CELL) | 0));
+          const cy = Math.min(NAV_H - 1, Math.max(0, (en.y / NAV_CELL) | 0));
+          let idx = navIdx(cx, cy);
+          if (navDist[idx] < 0) {
+            // The enemy's own cell has no BFS distance - either it's truly deep
+            // inside solid ground (shouldn't happen once worldBounce has run), or
+            // it's standing in the margin band added around obstacles above
+            // (worldBounce only guarantees clearance from actual solid pixels,
+            // not from solid+radius-margin, so there's a thin band next to every
+            // corner where an entity can physically stand but its own cell reads
+            // "blocked"). Search outward for the nearest cell that DOES have a
+            // valid distance and steer toward that instead of giving up - this is
+            // what actually closes the last few px of every corner detour.
+            let bd2 = 1e9,
+              bcx = -1,
+              bcy = -1;
+            for (let ry = -3; ry <= 3; ry++)
+              for (let rx = -3; rx <= 3; rx++) {
+                const nx = cx + rx,
+                  ny = cy + ry;
+                if (nx < 0 || ny < 0 || nx >= NAV_W || ny >= NAV_H) continue;
+                const nidx = navIdx(nx, ny);
+                if (navBlocked[nidx] || navDist[nidx] < 0) continue;
+                const d2 = rx * rx + ry * ry;
+                if (d2 < bd2) {
+                  bd2 = d2;
+                  bcx = nx;
+                  bcy = ny;
+                }
+              }
+            if (bcx < 0) return null;
+            const tx = bcx * NAV_CELL + NAV_CELL * 0.5,
+              ty = bcy * NAV_CELL + NAV_CELL * 0.5;
+            return Math.atan2(ty - en.y, tx - en.x);
+          }
+          let bd = navDist[idx],
+            bx = -1,
+            by = -1;
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++) {
+              if (!dx && !dy) continue;
+              const nx = cx + dx,
+                ny = cy + dy;
+              if (nx < 0 || ny < 0 || nx >= NAV_W || ny >= NAV_H) continue;
+              const nidx = navIdx(nx, ny);
+              if (navBlocked[nidx]) continue;
+              const nd = navDist[nidx];
+              if (nd >= 0 && nd < bd) {
+                bd = nd;
+                bx = nx;
+                by = ny;
+              }
+            }
+          if (bx < 0) return null;
+          const tx = bx * NAV_CELL + NAV_CELL * 0.5,
+            ty = by * NAV_CELL + NAV_CELL * 0.5;
+          return Math.atan2(ty - en.y, tx - en.x);
+        }
+        function setSolidRect(x, y, w, h, val) {
+          const x0 = Math.max(0, x | 0),
+            y0 = Math.max(0, y | 0),
+            x1 = Math.min(WW, (x + w) | 0),
+            y1 = Math.min(WH, (y + h) | 0);
+          for (let yy = y0; yy < y1; yy++) {
+            const row = yy * WW;
+            for (let xx = x0; xx < x1; xx++) solidMap[row + xx] = val;
+          }
+        }
+        function setSolidCircle(cx, cy, r, val) {
+          const x0 = Math.max(0, (cx - r) | 0),
+            y0 = Math.max(0, (cy - r) | 0),
+            x1 = Math.min(WW, (cx + r + 1) | 0),
+            y1 = Math.min(WH, (cy + r + 1) | 0),
+            r2 = r * r;
+          for (let yy = y0; yy < y1; yy++) {
+            const dy = yy - cy,
+              row = yy * WW;
+            for (let xx = x0; xx < x1; xx++) {
+              const dx = xx - cx;
+              if (dx * dx + dy * dy <= r2) solidMap[row + xx] = val;
+            }
+          }
+        }
+        function buildWorld() {
+          wctx.fillStyle = "#2a2e36";
+          wctx.fillRect(0, 0, WW, WH);
+          wctx.fillStyle = "#32363e";
+          for (let g = 0; g < WW; g += 80) {
+            wctx.fillRect(g, 0, 1, WH);
+          }
+          for (let g = 0; g < WH; g += 80) {
+            wctx.fillRect(0, g, WW, 1);
+          }
+          solidMap.fill(0);
+          for (let i = 0; i < 26; i++) {
+            const x = 80 + Math.random() * (WW - 160),
+              y = 80 + Math.random() * (WH - 160),
+              bw = 60 + Math.random() * 80,
+              bh = 60 + Math.random() * 80;
+            wctx.fillStyle = "#555b66";
+            wctx.fillRect(x, y, bw, bh);
+            setSolidRect(x, y, bw, bh, 1);
+          }
+        }
+        function eraseVoxels(x, y, r) {
+          setSolidCircle(x, y, r, 0);
+          wctx.save();
+          wctx.fillStyle = "#2a2e36";
+          wctx.beginPath();
+          wctx.arc(x, y, r, 0, 6.283185);
+          wctx.fill();
+          wctx.restore();
+          navRebuildRect(
+            x - r - NAV_CELL,
+            y - r - NAV_CELL,
+            x + r + NAV_CELL,
+            y + r + NAV_CELL,
+          );
+        }
+        function solidAt(x, y) {
+          x = x | 0;
+          y = y | 0;
+          if (x < 0 || y < 0 || x >= WW || y >= WH) return false;
+          return solidMap[y * WW + x] === 1;
+        }
+
+        function makePool(n, f) {
+          const a = new Array(n);
+          for (let i = 0; i < n; i++) a[i] = f();
+          return a;
+        }
+        const debris = makePool(160, () => ({
+          active: 0,
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          r: 2,
+          life: 0,
+          mass: 1,
+          col: "#888",
+        }));
+        const bullets = makePool(80, () => ({
+          active: 0,
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          type: 0,
+          dmg: 0,
+          life: 0,
+          from: 0,
+        }));
+        const particles = makePool(160, () => ({
+          active: 0,
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          life: 0,
+          col: "#fff",
+          type: 0,
+        }));
+        function recycleOldest(pool) {
+          let i = 0,
+            mn = 1e9;
+          for (let k = 0; k < pool.length; k++)
+            if (pool[k].active && pool[k].life < mn) {
+              mn = pool[k].life;
+              i = k;
+            }
+          return pool[i];
+        }
+        const popups = makePool(40, () => ({
+          active: 0,
+          x: 0,
+          y: 0,
+          life: 0,
+          txt: "",
+        }));
+        function spawnPopup(x, y, txt) {
+          let p = null;
+          for (let i = 0; i < popups.length; i++)
+            if (!popups[i].active) {
+              p = popups[i];
+              break;
+            }
+          if (!p) p = recycleOldest(popups);
+          p.active = 1;
+          p.x = x;
+          p.y = y - 14;
+          p.life = 0.6;
+          p.txt = "" + txt;
+        }
+        function spawnDebris(x, y, vx, vy, col, mass) {
+          let d = null;
+          for (let i = 0; i < debris.length; i++)
+            if (!debris[i].active) {
+              d = debris[i];
+              break;
+            }
+          if (!d) d = recycleOldest(debris);
+          d.active = 1;
+          d.x = x;
+          d.y = y;
+          d.vx = vx;
+          d.vy = vy;
+          d.r = 1.5 + Math.random() * 2.5;
+          d.life = 1 + Math.random();
+          d.col = col;
+          d.mass = mass || 1;
+        }
+        function spawnParticle(x, y, col, type) {
+          let p = null;
+          for (let i = 0; i < particles.length; i++)
+            if (!particles[i].active) {
+              p = particles[i];
+              break;
+            }
+          if (!p) p = recycleOldest(particles);
+          p.active = 1;
+          p.x = x;
+          p.y = y;
+          p.vx = (Math.random() - 0.5) * 4;
+          p.vy = (Math.random() - 0.5) * 4 - 1;
+          p.life =
+            type === 1
+              ? 0.9 + Math.random() * 0.5
+              : type === 2
+                ? 0.35 + Math.random() * 0.25
+                : 0.4 + Math.random() * 0.3;
+          p.col = col;
+          p.type = type || 0;
+        }
+        function spawnSmoke(x, y, n) {
+          for (let i = 0; i < n; i++)
+            spawnParticle(
+              x + (Math.random() - 0.5) * 10,
+              y + (Math.random() - 0.5) * 10,
+              "#8887",
+              1,
+            );
+        }
+        function spawnShimmer(x, y) {
+          spawnParticle(
+            x + (Math.random() - 0.5) * 8,
+            y + (Math.random() - 0.5) * 8,
+            "#7ff8",
+            2,
+          );
+        }
+
+        let shake = 0,
+          explosionZoom = 0,
+          flashT = 0,
+          score = 0,
+          plasmaTick = 0,
+          allowWave = 1;
+        function impact(x, y, r, power) {
+          eraseVoxels(x, y, r);
+          for (let i = 0; i < Math.min(10, r * 0.5); i++) {
+            const a = Math.random() * 6.283185,
+              sp = 1 + Math.random() * power;
+            spawnDebris(
+              x,
+              y,
+              Math.cos(a) * sp,
+              Math.sin(a) * sp - 1,
+              "#666",
+              1 + power * 0.05,
+            );
+          }
+          for (let i = 0; i < 6; i++) spawnParticle(x, y, "#fff", 0);
+          shake = Math.min(18, shake + power * 1.6);
+          if (power > 8)
+            explosionZoom = Math.min(0.1, explosionZoom + power * 0.004);
+        }
+        // Same debris/shake burst as impact(), but WITHOUT eraseVoxels(): used when a
+        // bullet hits an enemy. impact() used to be called there directly, which
+        // carved a hole in the world terrain under the enemy on every single hit.
+        // Enemy hits should only spawn sparks, not dig the map.
+        function impactFX(x, y, r, power) {
+          for (let i = 0; i < Math.min(10, r * 0.5); i++) {
+            const a = Math.random() * 6.283185,
+              sp = 1 + Math.random() * power;
+            spawnDebris(
+              x,
+              y,
+              Math.cos(a) * sp,
+              Math.sin(a) * sp - 1,
+              "#ffb347",
+              1 + power * 0.05,
+            );
+          }
+          for (let i = 0; i < 6; i++) spawnParticle(x, y, "#fff7c2", 0);
+          if (power > 3) spawnShimmer(x, y);
+          shake = Math.min(18, shake + power * 1.6);
+        }
+        // Reflects o's velocity about surface normal (nx,ny). Only reflects if o is
+        // actually moving INTO the surface (dot<0). Without this check, an object
+        // sitting inside another's collision radius for several frames (e.g. debris
+        // spawned right at an enemy's edge) gets its velocity flipped every single
+        // frame even after it's already moving away - producing the jittery,
+        // "vibrating" bounce that looked so unnatural.
+        const DIRS8 = [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+          [0.70710678, 0.70710678],
+          [-0.70710678, 0.70710678],
+          [0.70710678, -0.70710678],
+          [-0.70710678, -0.70710678],
+        ];
+        function reflect(o, nx, ny) {
+          const nl = Math.hypot(nx, ny);
+          if (nl < 1e-6) return;
+          nx /= nl;
+          ny /= nl;
+          const dot = o.vx * nx + o.vy * ny;
+          if (dot >= 0) return;
+          o.vx -= 2 * dot * nx;
+          o.vy -= 2 * dot * ny;
+          if (!Number.isFinite(o.vx)) o.vx = 0;
+          if (!Number.isFinite(o.vy)) o.vy = 0;
+        }
+
+        const SHIELD_MAX = 100,
+          SHIELD_ARC = 0.7854;
+        const HIP_D = 10,
+          STEP_REACH = 18,
+          STRIDE = 14;
+        const player = {
+          x: WW * 0.5,
+          y: WH * 0.5,
+          ang: 0,
+          bodyAng: 0,
+          vx: 0,
+          vy: 0,
+          ax: 0,
+          ay: 0,
+          hp: 100,
+          heat: 0,
+          overheat: 0,
+          dead: 0,
+          shieldAng: 0,
+          shieldOn: 0,
+          shieldHp: SHIELD_MAX,
+          shieldHitT: 0,
+          combo: 0,
+          comboTimer: 0,
+          ifr: 0,
+          dist: 0,
+          legs: null,
+        };
+        function hipOf(p, side) {
+          const th = p.bodyAng + side * 1.57079632679;
+          return [p.x + Math.cos(th) * HIP_D, p.y + Math.sin(th) * HIP_D];
+        }
+        function resetLegs(p) {
+          p.legs = [
+            { side: -1, fx: 0, fy: 0, tx: 0, ty: 0, planted: 1, t: 1 },
+            { side: 1, fx: 0, fy: 0, tx: 0, ty: 0, planted: 1, t: 1 },
+          ];
+          for (let i = 0; i < p.legs.length; i++) {
+            const h = hipOf(p, p.legs[i].side);
+            p.legs[i].fx = h[0];
+            p.legs[i].fy = h[1];
+            p.legs[i].tx = h[0];
+            p.legs[i].ty = h[1];
+          }
+        }
+        function updateIK(p, dt, sp) {
+          if (!p.legs) resetLegs(p);
+          const ca = Math.cos(p.bodyAng),
+            sa = Math.sin(p.bodyAng),
+            moving = sp > 14;
+          let stepping = 0;
+          for (let i = 0; i < p.legs.length; i++)
+            if (!p.legs[i].planted) stepping++;
+          for (let i = 0; i < p.legs.length; i++) {
+            const L = p.legs[i],
+              h = hipOf(p, L.side),
+              hx = h[0],
+              hy = h[1],
+              restX = hx - ca * 6,
+              restY = hy - sa * 6;
+            if (moving) {
+              if (
+                L.planted &&
+                stepping === 0 &&
+                Math.hypot(L.fx - hx, L.fy - hy) > STEP_REACH
+              ) {
+                L.planted = 0;
+                L.t = 0;
+                stepping = 1;
+                L.tx = hx + ca * STRIDE;
+                L.ty = hy + sa * STRIDE;
+              }
+              if (!L.planted) {
+                const k = Math.min(1, dt * 14);
+                L.t = Math.min(1, L.t + dt * 8);
+                L.fx += (L.tx - L.fx) * k;
+                L.fy += (L.ty - L.fy) * k;
+                if (L.t >= 1 || Math.hypot(L.tx - L.fx, L.ty - L.fy) < 1.2) {
+                  L.fx = L.tx;
+                  L.fy = L.ty;
+                  L.planted = 1;
+                }
+              }
+            } else {
+              L.planted = 1;
+              const k = Math.min(1, dt * 6);
+              L.fx += (restX - L.fx) * k;
+              L.fy += (restY - L.fy) * k;
+              L.tx = L.fx;
+              L.ty = L.fy;
+            }
+          }
+        }
+        resetLegs(player);
+        const cam = { x: WW * 0.5, y: WH * 0.5, zoom: 1 };
+        const enemies = [];
+        let wave = 1,
+          weapon = 0,
+          paused = 0,
+          fireT = 0,
+          fireHeld = 0,
+          mouseDown = 0;
+        const WEPS = ["auto", "plasma", "rocket"];
+        const keys = Object.create(null);
+        const moveVec = { x: 0, y: 0 },
+          aimVec = { x: 0, y: 0 };
+
+        const maskPool = [];
+        function getMaskCanvas() {
+          let c = maskPool.pop();
+          if (!c) {
+            c = document.createElement("canvas");
+            c.width = EMASK;
+            c.height = EMASK;
+          }
+          const m = c.getContext("2d");
+          m.setTransform(1, 0, 0, 1, 0, 0);
+          m.globalCompositeOperation = "source-over";
+          m.globalAlpha = 1;
+          m.clearRect(0, 0, EMASK, EMASK);
+          return { c, m };
+        }
+        function retMask(c) {
+          if (c && maskPool.length < 24) maskPool.push(c);
+        }
+        function buildEnemyMask(en) {
+          const { c, m } = getMaskCanvas();
+          const cx = EMASK * 0.5,
+            cy = EMASK * 0.5,
+            r = en.r;
+          m.fillStyle = "#6b7280";
+          for (let y = -r; y < r; y += 4)
+            for (let x = -r; x < r; x += 4) {
+              if (x * x + y * y < r * r) m.fillRect(cx + x, cy + y, 4, 4);
+            }
+          m.fillStyle = "#c2632e";
+          const rh = r * 0.68;
+          for (let y = -rh; y < rh; y += 4)
+            for (let x = -rh; x < rh; x += 4) {
+              if (x * x + y * y < rh * rh) m.fillRect(cx + x, cy + y, 4, 4);
+            }
+          m.fillStyle = "#ffd23f";
+          const rc = r * 0.34;
+          for (let y = -rc; y < rc; y += 4)
+            for (let x = -rc; x < rc; x += 4) {
+              if (x * x + y * y < rc * rc) m.fillRect(cx + x, cy + y, 4, 4);
+            }
+          en.mask = c;
+          en.mctx = m;
+          en.maskData = m.getImageData(0, 0, EMASK, EMASK).data;
+        }
+        function worldToMask(en, wx, wy) {
+          const dx = wx - en.x,
+            dy = wy - en.y,
+            th = -(en.ang || 0),
+            c = Math.cos(th),
+            s = Math.sin(th);
+          return [c * dx - s * dy + EMASK * 0.5, s * dx + c * dy + EMASK * 0.5];
+        }
+        function enemySolidAt(en, wx, wy) {
+          if (!en.maskData) return 1;
+          const p = worldToMask(en, wx, wy);
+          const lx = p[0] | 0,
+            ly = p[1] | 0;
+          if (lx < 0 || ly < 0 || lx >= EMASK || ly >= EMASK) return 0;
+          return en.maskData[(ly * EMASK + lx) * 4 + 3] > 20 ? 1 : 0;
+        }
+        function syncMaskData(en) {
+          if (en.mctx)
+            en.maskData = en.mctx.getImageData(0, 0, EMASK, EMASK).data;
+        }
+        function eraseEnemyMask(en, wx, wy, r) {
+          if (!en.mctx) return;
+          const p = worldToMask(en, wx, wy);
+          let lx = p[0],
+            ly = p[1];
+          r = Math.min(r, EMASK);
+          if (lx + r < 0 || ly + r < 0 || lx - r > EMASK || ly - r > EMASK)
+            return;
+          lx = Math.max(-r, Math.min(EMASK + r, lx));
+          ly = Math.max(-r, Math.min(EMASK + r, ly));
+          en.mctx.save();
+          en.mctx.globalCompositeOperation = "destination-out";
+          en.mctx.beginPath();
+          en.mctx.arc(lx, ly, r, 0, 6.283185);
+          en.mctx.fill();
+          en.mctx.restore();
+          en.maskDirty = 6;
+          syncMaskData(en);
+        }
+        function voxelR(kind, en) {
+          return kind === 1 ? 9 : kind === 2 ? (en ? en.r * 0.95 : 18) : 2.4;
+        }
+        function eraseEnemyDeep(en, wx, wy, r, vx, vy) {
+          eraseEnemyMask(en, wx, wy, r);
+          const n = Math.hypot(vx, vy) || 1;
+          eraseEnemyMask(en, wx + (vx / n) * 5, wy + (vy / n) * 5, r * 0.72);
+          eraseEnemyMask(en, wx + (vx / n) * 10, wy + (vy / n) * 10, r * 0.42);
+        }
+        function damageEnemy(en, wx, wy, amount, voxelR) {
+          if (en.hp <= 0) return;
+          amount = amount / (en.armor || 1);
+          if (en.type === 2 && en.shieldHp > 0) {
+            en.shieldHp -= amount;
+            if (en.shieldHp < 0) {
+              en.hp += en.shieldHp;
+              en.shieldHp = 0;
+            }
+          } else en.hp -= amount;
+          if (voxelR > 0) eraseEnemyMask(en, wx, wy, voxelR);
+          en.coreExposed = en.hp < en.maxHp * 0.35;
+          if (en.type === 1) en.legsBroken = en.coreExposed;
+          if (en.hp <= 0) {
+            score += en.type === 3 ? 500 : en.type === 2 ? 120 : 80;
+            sndExplo(en.type === 3 ? 1.6 : 1, en.x, en.y);
+            impact(en.x, en.y, en.r * 1.4, 6);
+          }
+        }
+        function spawnEnemy(type, x, y) {
+          const hp = type === 3 ? 300 : type === 2 ? 90 : type === 0 ? 70 : 50;
+          const en = {
+            type,
+            x,
+            y,
+            vx: 0,
+            vy: 0,
+            ang: 0,
+            hp,
+            maxHp: hp,
+            armor: type === 3 ? 3 : 1,
+            coreExposed: 0,
+            legsBroken: 0,
+            shieldHp: type === 2 ? 60 : 0,
+            r: type === 3 ? 34 : 20,
+            fireT: 0.4 + Math.random(),
+            maskDirty: 0,
+          };
+          buildEnemyMask(en);
+          enemies.push(en);
+        }
+        function newWave(n) {
+          for (let i = 0; i < n; i++) {
+            let x,
+              y,
+              attempts = 0;
+            do {
+              const a = Math.random() * 6.283185,
+                d = 340 + Math.random() * 220;
+              x = player.x + Math.cos(a) * d;
+              y = player.y + Math.sin(a) * d;
+              attempts++;
+            } while (
+              (solidAt(x, y) ||
+                solidAt(x + 16, y) ||
+                solidAt(x - 16, y) ||
+                solidAt(x, y + 16) ||
+                solidAt(x, y - 16)) &&
+              attempts < 24
+            );
+            if (attempts >= 24) {
+              x = Math.max(40, Math.min(WW - 40, x));
+              y = Math.max(40, Math.min(WH - 40, y));
+            }
+            spawnEnemy(n > 4 && i === 0 ? 3 : i % 3, x, y);
+          }
+        }
+
+        function shieldCovers(wx, wy) {
+          if (!player.shieldOn || player.shieldHp <= 0) return 0;
+          const ang = Math.atan2(wy - player.y, wx - player.x);
+          const diff = Math.atan2(
+            Math.sin(ang - player.shieldAng),
+            Math.cos(ang - player.shieldAng),
+          );
+          return Math.abs(diff) < SHIELD_ARC ? 1 : 0;
+        }
+        function absorbShield(amt) {
+          if (amt <= 0 || player.shieldHp <= 0) return amt;
+          const take = Math.min(player.shieldHp, amt);
+          player.shieldHp -= take;
+          player.shieldHitT = 0.9;
+          lastShld = -1;
+          spawnParticle(
+            player.x + (Math.random() - 0.5) * 12,
+            player.y + (Math.random() - 0.5) * 12,
+            "#7ff",
+            2,
+          );
+          return amt - take;
+        }
+        function hurt(amt, wx, wy) {
+          if (player.dead || amt <= 0) return;
+          if (wx !== undefined && shieldCovers(wx, wy)) amt = absorbShield(amt);
+          if (amt <= 0) {
+            shake = Math.min(10, shake + 2);
+            return;
+          }
+          if (player.ifr > 0) return;
+          player.hp -= amt;
+          player.ifr = 0.22;
+          shake = Math.min(18, shake + 4 + amt * 0.35);
+          flashHit();
+          if (player.hp <= 0) {
+            player.hp = 0;
+            player.dead = 1;
+            stopAllLoops();
+            finalWaveEl.textContent =
+              "Survived to wave " + wave + "  SCORE " + score;
+            goEl.style.display = "flex";
+          }
+        }
+        function flashHit() {
+          flashEl.classList.add("hit");
+          flashT = 0.12;
+        }
+        let comboTxt = "";
+        function addCombo() {
+          player.combo++;
+          player.comboTimer = 1.4;
+          const t = "x" + player.combo + " CHAIN";
+          if (t !== comboTxt) {
+            comboTxt = t;
+            comboEl.textContent = t;
+          }
+          comboEl.style.opacity = "1";
+        }
+
+        const CODEMAP = {
+          KeyW: "w",
+          KeyA: "a",
+          KeyS: "s",
+          KeyD: "d",
+          ArrowUp: "arrowup",
+          ArrowDown: "arrowdown",
+          ArrowLeft: "arrowleft",
+          ArrowRight: "arrowright",
+          ShiftLeft: "shift",
+          ShiftRight: "shift",
+          Space: " ",
+          Digit1: "1",
+          Digit2: "2",
+          Digit3: "3",
+          Escape: "escape",
+          KeyP: "p",
+        };
+        function onKey(e, down) {
+          const k = (CODEMAP[e.code] || e.key || "").toLowerCase();
+          keys[k] = down ? 1 : 0;
+          if (down) {
+            if (k === "escape" || k === "p") {
+              e.preventDefault();
+              togglePause();
+            }
+            if (
+              k === "1" ||
+              k === "f1" ||
+              e.code === "Digit1" ||
+              e.code === "F1"
+            ) {
+              e.preventDefault();
+              weapon = 0;
+              plasmaHumStop();
+            }
+            if (k === "2" || e.code === "Digit2") {
+              e.preventDefault();
+              weapon = 1;
+            }
+            if (k === "3" || e.code === "Digit3") {
+              e.preventDefault();
+              weapon = 2;
+              plasmaHumStop();
+            }
+            if (k === " ") {
+              mouseDown = 1;
+              e.preventDefault();
+            }
+          } else if (k === " ") mouseDown = 0;
+          if (
+            k === "w" ||
+            k === "a" ||
+            k === "s" ||
+            k === "d" ||
+            k === "arrowup" ||
+            k === "arrowdown" ||
+            k === "arrowleft" ||
+            k === "arrowright"
+          )
+            e.preventDefault();
+        }
+        addEventListener(
+          "keydown",
+          (e) => {
+            if (e.code === "F1" || e.key === "F1") e.preventDefault();
+            onKey(e, 1);
+          },
+          { passive: false },
+        );
+        addEventListener("keyup", (e) => onKey(e, 0), { passive: false });
+
+        const stickInit = Object.create(null);
+        function stickSetup(id, cb) {
+          if (stickInit[id]) return;
+          stickInit[id] = 1; // guards against ever attaching duplicate document-level listeners if called twice
+          const el = document.getElementById(id),
+            nub = el.querySelector(".nub");
+          let touchId = null,
+            cx = 0,
+            cy = 0;
+          const max = 45;
+          function rec() {
+            const r = el.getBoundingClientRect();
+            cx = r.left + r.width * 0.5;
+            cy = r.top + r.height * 0.5;
+          }
+          function apply(clientX, clientY) {
+            let dx = clientX - cx,
+              dy = clientY - cy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > max) {
+              dx = (dx / dist) * max;
+              dy = (dy / dist) * max;
+            }
+            nub.style.left = 35 + dx + "px";
+            nub.style.top = 35 + dy + "px";
+            cb(dx / max, dy / max);
+          }
+          function reset() {
+            touchId = null;
+            nub.style.left = "35px";
+            nub.style.top = "35px";
+            cb(0, 0);
+          }
+          el.addEventListener(
+            "touchstart",
+            (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (touchId === null) {
+                  touchId = t.identifier;
+                  rec();
+                  apply(t.clientX, t.clientY);
+                }
+              }
+            },
+            { passive: false },
+          );
+          document.addEventListener(
+            "touchmove",
+            (e) => {
+              if (touchId === null) return;
+              const list = e.touches.length ? e.touches : e.changedTouches;
+              for (let i = 0; i < list.length; i++) {
+                const t = list[i];
+                if (t.identifier === touchId) {
+                  apply(t.clientX, t.clientY);
+                  break;
+                }
+              }
+            },
+            { passive: true },
+          );
+          function up(e) {
+            if (touchId === null) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+              if (e.changedTouches[i].identifier === touchId) {
+                reset();
+                break;
+              }
+            }
+          }
+          document.addEventListener("touchend", up, { passive: true });
+          document.addEventListener("touchcancel", up, { passive: true });
+        }
+        let usingStickAim = false;
+        stickSetup("l", (x, y) => {
+          moveVec.x = x;
+          moveVec.y = y;
+        });
+        stickSetup("r", (x, y) => {
+          aimVec.x = x;
+          aimVec.y = y;
+          if (x || y) {
+            player.ang = Math.atan2(y, x);
+            fireHeld = 1;
+            usingStickAim = true;
+          } else {
+            fireHeld = 0;
+            usingStickAim = false;
+          }
+        });
+        const shBtn = document.getElementById("shbtn");
+        let touchShield = 0,
+          padMove = 0,
+          padAim = 0,
+          padFire = 0,
+          padShield = 0;
+        function setTouchShield(on) {
+          touchShield = on ? 1 : 0;
+          shBtn.classList.toggle("on", !!on);
+        }
+        shBtn.addEventListener(
+          "pointerdown",
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setTouchShield(1);
+            unlockAudio();
+          },
+          { passive: false },
+        );
+        shBtn.addEventListener(
+          "pointerup",
+          (e) => {
+            e.preventDefault();
+            setTouchShield(0);
+          },
+          { passive: false },
+        );
+        shBtn.addEventListener("pointercancel", () => setTouchShield(0));
+        shBtn.addEventListener("pointerleave", () => setTouchShield(0));
+        // Mouse aiming: only *store* the raw pointer position here. The angle to the
+        // player is computed once per frame inside update(), using that frame's
+        // camera position/zoom. The old code assumed the player was always drawn at
+        // the exact screen center, but the camera leads/lags behind the player
+        // (smoothed follow + zoom-on-speed), so the mecha was aiming at a point
+        // offset from the mouse cursor whenever the player wasn't perfectly centered.
+        let mouseCSSX = W * 0.5,
+          mouseCSSY = H * 0.5,
+          mouseActive = false;
+        function trackPointer(e) {
+          const r = cv.getBoundingClientRect();
+          const rw = r.width || W,
+            rh = r.height || H;
+          mouseCSSX = (e.clientX - r.left) * (W / rw);
+          mouseCSSY = (e.clientY - r.top) * (H / rh);
+          mouseActive = true;
+        }
+        cv.addEventListener("pointerdown", (e) => {
+          if (e.target !== cv) return;
+          if (e.pointerType === "touch") return;
+          mouseDown = 1;
+          mouseActive = true;
+          trackPointer(e);
+          unlockAudio();
+          try {
+            cv.setPointerCapture(e.pointerId);
+          } catch (err) {}
+        });
+        addEventListener("keydown", () => unlockAudio(), { once: true });
+        addEventListener("touchstart", () => unlockAudio(), {
+          once: true,
+          passive: true,
+        });
+        // Listening on window (not just the canvas) with pointer capture keeps
+        // tracking the cursor even if it briefly leaves the canvas/window bounds,
+        // which was the cause of the mouse seeming to "stop responding" and then
+        // jump back once it re-entered — capture plus a window-level listener means
+        // we never miss a move event while a button is held.
+        addEventListener("pointerup", () => {
+          mouseDown = 0;
+        });
+        addEventListener("pointercancel", () => {
+          mouseDown = 0;
+        });
+        addEventListener("pointermove", trackPointer, { passive: true });
+
+        function togglePause(force) {
+          paused = force !== undefined ? force : !paused;
+          if (player.dead) paused = 0;
+          menuEl.style.display = paused ? "flex" : "none";
+          if (paused) stopAllLoops();
+        }
+        wpnEl.onclick = () => {
+          weapon = weapon === 0 ? 1 : weapon === 1 ? 2 : 0;
+          if (weapon !== 1) plasmaHumStop();
+        };
+        document.getElementById("pause").onclick = () => togglePause();
+        document.getElementById("bres").onclick = () => togglePause(0);
+        document.getElementById("brestart").onclick = () => restart();
+        document.getElementById("brestart2").onclick = () => restart();
+        document.getElementById("bsound").onclick = (e) => {
+          soundOn = !soundOn;
+          if (!soundOn) stopAllLoops();
+          e.target.textContent = "Sound: " + (soundOn ? "On" : "Off");
+        };
+        let last = performance.now();
+        function clearKeys() {
+          for (const k in keys) keys[k] = 0;
+          mouseDown = 0;
+          fireHeld = 0;
+          moveVec.x = 0;
+          moveVec.y = 0;
+          padMove = 0;
+          padAim = 0;
+          padFire = 0;
+          padShield = 0;
+          usingStickAim = false;
+          setTouchShield(0);
+        }
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) {
+            stopAllLoops();
+            clearKeys();
+            last = performance.now();
+            togglePause(1);
+          } else last = performance.now();
+        });
+        addEventListener("blur", () => {
+          clearKeys();
+        });
+        addEventListener("focus", () => {
+          clearKeys();
+          last = performance.now();
+        });
+
+        function fireWeapon(dt) {
+          if (player.overheat || player.dead) {
+            plasmaHumStop();
+            return;
+          }
+          if (weapon === 1) {
+            plasmaHumStart();
+            const range = 340;
+            let hitE = 0;
+            plasmaTick++;
+            for (let d = 16; d < range; d += 8) {
+              const px = player.x + Math.cos(player.ang) * d,
+                py = player.y + Math.sin(player.ang) * d;
+              if (solidAt(px, py)) {
+                eraseVoxels(px, py, 7);
+                spawnParticle(px, py, "#7ff", 0);
+                break;
+              }
+              for (let i = 0; i < enemies.length; i++) {
+                const en = enemies[i];
+                if (en.hp <= 0 || en._pt === plasmaTick) continue;
+                const dx = px - en.x,
+                  dy = py - en.y;
+                if (
+                  dx * dx + dy * dy < en.r * en.r &&
+                  enemySolidAt(en, px, py)
+                ) {
+                  damageEnemy(en, px, py, 18 * dt, voxelR(1, en));
+                  en._pt = plasmaTick;
+                  hitE = 1;
+                  spawnParticle(px, py, "#7ff", 0);
+                  spawnShimmer(px, py);
+                }
+              }
+            }
+            player.heat = Math.min(100, player.heat + dt * 55);
+            if (hitE) addCombo();
+            shake = Math.min(10, shake + dt * 6);
+            const rec = 18 * dt;
+            player.vx = Math.max(
+              -MAXSPD,
+              Math.min(MAXSPD, player.vx - Math.cos(player.ang) * rec),
+            );
+            player.vy = Math.max(
+              -MAXSPD,
+              Math.min(MAXSPD, player.vy - Math.sin(player.ang) * rec),
+            );
+            return;
+          }
+          for (let i = 0; i < bullets.length; i++) {
+            const b = bullets[i];
+            if (!b.active) {
+              b.active = 1;
+              b.from = 1;
+              b.x = player.x + Math.cos(player.ang) * 28;
+              b.y = player.y + Math.sin(player.ang) * 28;
+              const spd = weapon === 2 ? 280 : 480;
+              b.vx = Math.cos(player.ang) * spd;
+              b.vy = Math.sin(player.ang) * spd;
+              b.dmg = weapon === 2 ? 0 : 8;
+              b.life = weapon === 2 ? 2 : 1.2;
+              b.type = weapon;
+              player.heat = Math.min(
+                100,
+                player.heat + (weapon === 2 ? 18 : 3.2),
+              );
+              const rec = weapon === 2 ? 36 : 12;
+              player.vx = Math.max(
+                -MAXSPD,
+                Math.min(MAXSPD, player.vx - Math.cos(player.ang) * rec),
+              );
+              player.vy = Math.max(
+                -MAXSPD,
+                Math.min(MAXSPD, player.vy - Math.sin(player.ang) * rec),
+              );
+              sndShot(b.x, b.y, spd);
+              return;
+            }
+          }
+        }
+        function rocketExplode(x, y) {
+          const R = 70;
+          impact(x, y, R, 14);
+          sndExplo(1.2, x, y);
+          spawnSmoke(x, y, 8);
+          for (let i = 0; i < enemies.length; i++) {
+            const en = enemies[i];
+            if (en.hp <= 0) continue;
+            const dx = en.x - x,
+              dy = en.y - y,
+              d = Math.hypot(dx, dy) || 1;
+            if (d < R + en.r) {
+              const f = 1 - d / (R + en.r);
+              damageEnemy(en, x, y, 40 * f, voxelR(2, en));
+              en.vx += (dx / d) * 180 * f;
+              en.vy += (dy / d) * 180 * f;
+              spawnPopup(en.x, en.y, Math.round(40 * f));
+              addCombo();
+            }
+          }
+          const pdx = player.x - x,
+            pdy = player.y - y,
+            pd = Math.hypot(pdx, pdy);
+          if (pd < R + PR) {
+            const f = 1 - pd / (R + PR);
+            hurt(12 * f, x, y);
+            if (pd > 1) {
+              player.vx += (pdx / pd) * 80 * f;
+              player.vy += (pdy / pd) * 80 * f;
+            }
+          }
+        }
+        function typeSpeed(en) {
+          return en.type === 3 ? 26 : en.type === 2 ? 22 : 40;
+        }
+
+        function spawnEbullet(en, ang) {
+          for (let i = 0; i < bullets.length; i++) {
+            const b = bullets[i];
+            if (!b.active) {
+              b.active = 1;
+              b.from = 2;
+              b.type = 0;
+              b.dmg = 6;
+              b.life = 2.2;
+              b.x = en.x + Math.cos(ang) * en.r;
+              b.y = en.y + Math.sin(ang) * en.r;
+              b.vx = Math.cos(ang) * 220;
+              b.vy = Math.sin(ang) * 220;
+              return;
+            }
+          }
+        }
+
+        // Whether a circle of radius r at (cx,cy) overlaps any solid pixel. The old
+        // code only ever tested the single center pixel, so an entity's sprite
+        // (which is drawn at its full radius) could sit visibly clipped into a
+        // wall corner - overlapping it by up to r pixels - while the physics still
+        // considered it perfectly free and never pushed it out. That's the "wedged
+        // into the obstacle corner" look: the sprite is genuinely inside the wall,
+        // the game just never notices. 12 points around the rim plus the center is
+        // enough to catch that at the radii used in this game (16-34px) without
+        // being expensive.
+        function circleHitsSolid(cx, cy, r) {
+          if (solidAt(cx, cy)) return true;
+          const n = 12;
+          for (let k = 0; k < n; k++) {
+            const a = (k / n) * 6.283185;
+            if (solidAt(cx + Math.cos(a) * r, cy + Math.sin(a) * r))
+              return true;
+          }
+          return false;
+        }
+        function worldBounce(o, r, inx, iny) {
+          if (o.x < r) {
+            o.x = r;
+            if (o.vx < 0) o.vx = -o.vx * 0.4;
+          } else if (o.x > WW - r) {
+            o.x = WW - r;
+            if (o.vx > 0) o.vx = -o.vx * 0.4;
+          }
+          if (o.y < r) {
+            o.y = r;
+            if (o.vy < 0) o.vy = -o.vy * 0.4;
+          } else if (o.y > WH - r) {
+            o.y = WH - r;
+            if (o.vy > 0) o.vy = -o.vy * 0.4;
+          }
+          const cx = o.x | 0,
+            cy = o.y | 0;
+          if (!circleHitsSolid(cx, cy, r)) {
+            // Only fully clear the stuck counter once we've actually gotten clear
+            // of the spot where we first got stuck (2r away). An object with
+            // strong AI drive toward a target on the far side of a gap it can't
+            // fit through re-enters solid ground almost every other frame; without
+            // this, each brief 1-frame escape reset the counter to 0 before it
+            // could ever reach the ">10, do a real unstick kick" threshold below,
+            // so it just oscillated in place indefinitely instead of ever getting
+            // the decisive push - the "stuck vibrating on an obstacle" bug.
+            if (o.stuck && o._stuckAt) {
+              const sdx = o.x - o._stuckAt.x,
+                sdy = o.y - o._stuckAt.y;
+              if (sdx * sdx + sdy * sdy > r * 2 * (r * 2)) {
+                o.stuck = 0;
+                o._stuckAt = null;
+              }
+            } else o.stuck = 0;
+            return;
+          }
+          if (!o._stuckAt) o._stuckAt = { x: o.x, y: o.y };
+          o.stuck = (o.stuck || 0) + 1;
+          if (inx || iny) {
+            const mag = Math.hypot(inx, iny) || 1;
+            const ex = inx / mag,
+              ey = iny / mag;
+            if (!circleHitsSolid(cx + ex * 22, cy + ey * 22, r)) {
+              o.x += ex * 8;
+              o.y += ey * 8;
+              o.stuck = 0;
+              return;
+            }
+          }
+          // Robust escape direction: ray-march outward in 8 compass directions,
+          // testing the FULL CIRCLE (not a single pixel) at each step, and walk
+          // toward whichever direction reaches a position where the whole entity
+          // is clear soonest. The old approach only sampled 4 single pixels +-4px
+          // away and used their sign as the push direction; inside a concave
+          // corner formed by two separate obstacle rectangles (very common with
+          // this game's procedurally placed boxes) that 1px gradient can read
+          // solid on both sides at once, so the "escape" vector nearly cancels out
+          // and the object is left pinned, getting shoved back and forth by a
+          // near-zero net push every frame instead of actually leaving the corner.
+          const probeMax = Math.max(24, r * 1.5);
+          let nx = 0,
+            ny = 0,
+            bestDist = -1;
+          for (let k = 0; k < DIRS8.length; k++) {
+            const ddx = DIRS8[k][0],
+              ddy = DIRS8[k][1];
+            for (let s = 2; s <= probeMax; s += 2) {
+              if (!circleHitsSolid(cx + ddx * s, cy + ddy * s, r)) {
+                if (bestDist < 0 || s < bestDist) {
+                  bestDist = s;
+                  nx = ddx;
+                  ny = ddy;
+                }
+                break;
+              }
+            }
+          }
+          if (bestDist < 0) {
+            // Fully enclosed on all 8 probes (shouldn't happen with this map's
+            // geometry, but stay safe) - fall back to the old 1px gradient so we
+            // still produce *some* direction rather than getting NaN.
+            if (solidAt(cx + 4, cy)) nx -= 1;
+            if (solidAt(cx - 4, cy)) nx += 1;
+            if (solidAt(cx, cy + 4)) ny -= 1;
+            if (solidAt(cx, cy - 4)) ny += 1;
+            if (!nx && !ny) {
+              nx = inx && iny ? inx : 1;
+              ny = iny || 0;
+            }
+          }
+          let nl = Math.hypot(nx, ny);
+          if (!(nl > 1e-6)) {
+            o.vx = 0;
+            o.vy = 0;
+            if (!Number.isFinite(o.x)) o.x = WW * 0.5;
+            if (!Number.isFinite(o.y)) o.y = WH * 0.5;
+            o.x = Math.max(r, Math.min(WW - r, o.x + 6));
+            return;
+          }
+          nx /= nl;
+          ny /= nl;
+          reflect(o, nx, ny);
+          o.vx *= 0.45;
+          o.vy *= 0.45;
+          const push = o.stuck > 4 ? 8 : 4;
+          o.x += nx * push;
+          o.y += ny * push;
+          const sp = Math.hypot(o.vx, o.vy);
+          if (sp > MAXSPD * 1.5) {
+            o.vx *= MAXSPD / sp;
+            o.vy *= MAXSPD / sp;
+          }
+          if (o.stuck > 10) {
+            o.x += nx * Math.max(bestDist + 2, 10);
+            o.y += ny * Math.max(bestDist + 2, 10);
+            o.vx = 0;
+            o.vy = 0;
+            o.stuck = 0;
+            o._stuckAt = null;
+          }
+        }
+
+        // Cheap "is this direction clear" ray check used for enemy obstacle
+        // avoidance below - single-point sampling along the ray, not full-circle,
+        // since this only needs to pick a viable heading; worldBounce still does
+        // the precise full-circle correction if an enemy clips a wall anyway.
+        function rayBlocked(x, y, ang, dist) {
+          const steps = Math.max(2, Math.floor(dist / 10));
+          const ca = Math.cos(ang),
+            sa = Math.sin(ang);
+          for (let s = 1; s <= steps; s++) {
+            const t = (dist * s) / steps;
+            if (solidAt(x + ca * t, y + sa * t)) return true;
+          }
+          return false;
+        }
+        const STEER_OFFS = [0.3, 0.6, 0.9, 1.2, 1.6, 2.0, 2.4, 2.8];
+        // Enemies used to just accelerate in a straight line at the player every
+        // frame with no awareness of obstacles at all, leaning entirely on
+        // worldBounce to shove them out again after they'd already rammed into a
+        // wall. That works for a single flat wall but falls apart at any notch,
+        // narrow gap, or corner formed by two adjacent boxes: the AI keeps
+        // re-choosing the same blocked straight-line heading every single frame,
+        // so it just grinds against the same spot indefinitely instead of ever
+        // routing around - the "constantly hitting obstacles and getting stuck,
+        // not able to find a way around" bug. This casts a short ray toward the
+        // target first; if it's clear, behave exactly as before (no cost change
+        // in open areas). If it's blocked, it fans outward in both directions
+        // (~17algo,34,51,69,92,114,137,160 degrees) and steers toward the first
+        // heading that's actually clear, so the enemy curves around the obstacle
+        // instead of walking into it.
+        function steerAngle(en, dx, dy, d) {
+          const baseAng = Math.atan2(dy, dx);
+          for (const look of [
+            Math.min(110, d, 50 + en.r * 2),
+            Math.min(220, d, 180),
+          ]) {
+            if (look < 10) continue;
+            if (!rayBlocked(en.x, en.y, baseAng, look)) return baseAng;
+            for (let k = 0; k < STEER_OFFS.length; k++) {
+              const o = STEER_OFFS[k];
+              if (!rayBlocked(en.x, en.y, baseAng + o, look))
+                return baseAng + o;
+              if (!rayBlocked(en.x, en.y, baseAng - o, look))
+                return baseAng - o;
+            }
+          }
+          return baseAng;
+        }
+        function update(dt) {
+          if (player.dead) return;
+          computeFlowField();
+          if (mouseActive && !usingStickAim) {
+            const screenPX = (player.x - cam.x) * cam.zoom + W * 0.5,
+              screenPY = (player.y - cam.y) * cam.zoom + H * 0.5;
+            player.ang = Math.atan2(mouseCSSY - screenPY, mouseCSSX - screenPX);
+          }
+          if (player.ifr > 0) player.ifr -= dt;
+          if (player.heat >= 100) {
+            player.overheat = 1;
+            plasmaHumStop();
+          }
+          if (player.overheat) {
+            player.heat -= dt * 40;
+            if (player.heat <= 10) player.overheat = 0;
+          } else player.heat = Math.max(0, player.heat - dt * 8);
+          if (player.heat > 85 && Math.random() < 0.02) sndHeat();
+
+          const kx =
+            (keys.d || keys.arrowright ? 1 : 0) -
+            (keys.a || keys.arrowleft ? 1 : 0);
+          const ky =
+            (keys.s || keys.arrowdown ? 1 : 0) -
+            (keys.w || keys.arrowup ? 1 : 0);
+          let mx, my;
+          if (kx || ky) {
+            const m = Math.hypot(kx, ky);
+            mx = kx / m;
+            my = ky / m;
+          } else {
+            mx = moveVec.x;
+            my = moveVec.y;
+          }
+          const im = Math.hypot(mx, my);
+          if (im > 0.08) {
+            player.ax = (mx / im) * ACCEL;
+            player.ay = (my / im) * ACCEL;
+          } else {
+            player.ax = -player.vx * FRICTION;
+            player.ay = -player.vy * FRICTION;
+          }
+          player.vx += player.ax * dt;
+          player.vy += player.ay * dt;
+          let sp = Math.hypot(player.vx, player.vy);
+          if (sp > MAXSPD) {
+            player.vx *= MAXSPD / sp;
+            player.vy *= MAXSPD / sp;
+            sp = MAXSPD;
+          }
+          if (sp < 1e-4) {
+            player.vx = 0;
+            player.vy = 0;
+            sp = 0;
+          }
+          player.x += player.vx * dt;
+          player.y += player.vy * dt;
+          worldBounce(player, PR, mx, my);
+          updateIK(player, dt, sp);
+
+          const moveSpeed = sp;
+          if (moveSpeed > 8) {
+            player.dist += moveSpeed * dt;
+            const ta = Math.atan2(player.vy, player.vx);
+            let da = Math.atan2(
+              Math.sin(ta - player.bodyAng),
+              Math.cos(ta - player.bodyAng),
+            );
+            player.bodyAng += da * 0.1;
+          }
+
+          player.shieldOn =
+            (keys.shift || touchShield || padShield) && player.shieldHp > 0
+              ? 1
+              : 0;
+          if (player.shieldOn) player.shieldAng = player.ang;
+          if (player.shieldHitT > 0) player.shieldHitT -= dt;
+          else if (!player.shieldOn && player.shieldHp < SHIELD_MAX)
+            player.shieldHp = Math.min(SHIELD_MAX, player.shieldHp + dt * 10);
+
+          fireT -= dt;
+          const firing = mouseDown || fireHeld || padFire;
+          if (player.overheat || player.dead) plasmaHumStop();
+          else if (firing && fireT <= 0) {
+            fireWeapon(dt);
+            fireT = weapon === 1 ? 0 : weapon === 2 ? 0.6 : 0.09;
+          } else if (firing && weapon === 1) fireWeapon(dt);
+          if (!(firing && weapon === 1) || player.overheat) plasmaHumStop();
+
+          for (let i = 0; i < bullets.length; i++) {
+            const b = bullets[i];
+            if (!b.active) continue;
+            const ox = b.x,
+              oy = b.y;
+            b.life -= dt;
+            b.x += b.vx * dt;
+            b.y += b.vy * dt;
+            if (b.life <= 0 || b.x < 0 || b.y < 0 || b.x > WW || b.y > WH) {
+              if (b.type === 2 && b.from === 1) rocketExplode(b.x, b.y);
+              b.active = 0;
+              continue;
+            }
+            const dist = Math.hypot(b.x - ox, b.y - oy);
+            const steps = Math.max(1, Math.ceil(dist / 6));
+            let hitV = 0,
+              hx = b.x,
+              hy = b.y;
+            for (let s = 1; s <= steps; s++) {
+              hx = ox + ((b.x - ox) * s) / steps;
+              hy = oy + ((b.y - oy) * s) / steps;
+              if (solidAt(hx, hy)) {
+                hitV = 1;
+                break;
+              }
+            }
+            if (hitV) {
+              if (b.type === 2 && b.from === 1) rocketExplode(hx, hy);
+              else if (b.from === 1) {
+                impact(hx, hy, b.type === 1 ? 14 : 8, 3);
+                sndCrunch(0.8, hx, hy, Math.hypot(b.vx, b.vy));
+              }
+              b.active = 0;
+              continue;
+            }
+            if (b.from === 1) {
+              for (let j = 0; j < enemies.length; j++) {
+                const en = enemies[j];
+                if (en.hp <= 0) continue;
+                const dx = b.x - en.x,
+                  dy = b.y - en.y;
+                if (
+                  dx * dx + dy * dy < (en.r + 4) * (en.r + 4) &&
+                  enemySolidAt(en, b.x, b.y)
+                ) {
+                  if (b.type === 2) rocketExplode(b.x, b.y);
+                  else {
+                    if (b.type === 0)
+                      eraseEnemyDeep(en, b.x, b.y, voxelR(0, en), b.vx, b.vy);
+                    damageEnemy(
+                      en,
+                      b.x,
+                      b.y,
+                      b.dmg,
+                      b.type === 0 ? 0 : voxelR(b.type, en),
+                    );
+                    impactFX(b.x, b.y, 8, 2);
+                    spawnPopup(b.x, b.y, Math.round(b.dmg / (en.armor || 1)));
+                    addCombo();
+                  }
+                  b.active = 0;
+                  break;
+                }
+              }
+            } else {
+              const dx = b.x - player.x,
+                dy = b.y - player.y;
+              if (dx * dx + dy * dy < PR * PR) {
+                hurt(b.dmg, b.x, b.y);
+                b.active = 0;
+              }
+            }
+          }
+
+          for (let i = 0; i < debris.length; i++) {
+            const d = debris[i];
+            if (!d.active) continue;
+            d.life -= dt;
+            if (d.life <= 0) {
+              d.active = 0;
+              continue;
+            }
+            d.vy += 220 * dt;
+            d.vx *= 0.99;
+            d.x += d.vx * dt * 60;
+            d.y += d.vy * dt * 60;
+            if (d.x < 0 || d.y < 0 || d.x > WW || d.y > WH) {
+              d.active = 0;
+              continue;
+            }
+            worldBounce(d, d.r, 0, 0);
+            const mom = d.mass * Math.hypot(d.vx, d.vy);
+            if (mom < 4) continue;
+            for (let j = 0; j < enemies.length; j++) {
+              const en = enemies[j];
+              if (en.hp <= 0) continue;
+              const dx = d.x - en.x,
+                dy = d.y - en.y,
+                rad = en.r + d.r,
+                dd = dx * dx + dy * dy;
+              if (dd < rad * rad && enemySolidAt(en, d.x, d.y)) {
+                const dist = Math.sqrt(dd) || 1,
+                  nx = dx / dist,
+                  ny = dy / dist;
+                damageEnemy(en, d.x, d.y, Math.min(8, mom * 0.08), 2);
+                reflect(d, nx, ny);
+                d.vx *= 0.4;
+                d.vy *= 0.4;
+                // Push the debris fully outside the enemy's radius immediately,
+                // with a little extra clearance. Without this it can stay
+                // overlapping for several frames (its own speed is often too low
+                // to escape in one step), re-triggering this block and looking
+                // like it's rattling in place against the enemy. The extra margin
+                // also helps it clear a second nearby enemy in one shot when
+                // several are clustered together, instead of immediately
+                // re-colliding with the neighbor.
+                const pen = rad - dist;
+                d.x += nx * (pen + 1.5);
+                d.y += ny * (pen + 1.5);
+              }
+            }
+          }
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            if (!p.active) continue;
+            p.life -= dt;
+            if (p.life <= 0) {
+              p.active = 0;
+              continue;
+            }
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.type === 1 || p.type === 2) {
+              p.vx *= 0.98;
+              p.vy *= 0.98;
+            } else p.vy += 100 * dt;
+          }
+          for (let i = 0; i < popups.length; i++) {
+            const pu = popups[i];
+            if (!pu.active) continue;
+            pu.life -= dt;
+            if (pu.life <= 0) {
+              pu.active = 0;
+              continue;
+            }
+            pu.y -= 30 * dt;
+          }
+          if (flashT > 0) {
+            flashT -= dt;
+            if (flashT <= 0) flashEl.classList.remove("hit");
+          }
+
+          if (player.combo > 0) {
+            player.comboTimer -= dt;
+            if (player.comboTimer <= 0) {
+              player.combo = 0;
+              comboEl.style.opacity = "0";
+            }
+          }
+
+          let alive = 0;
+          for (let i = 0; i < enemies.length; i++) {
+            const en = enemies[i];
+            if (en.hp <= 0) continue;
+            alive++;
+            const dx = player.x - en.x,
+              dy = player.y - en.y,
+              d = Math.hypot(dx, dy) || 1;
+            const targetAng = Math.atan2(dy, dx);
+            let da = Math.atan2(
+              Math.sin(targetAng - en.ang),
+              Math.cos(targetAng - en.ang),
+            );
+            en.ang += da * Math.min(1, dt * 4);
+            if (en.maskDirty > 0) en.maskDirty--;
+            let spd2 = typeSpeed(en);
+            if (en.legsBroken) spd2 *= 0.35;
+            let sAng = d < NAV_CELL * 1.4 ? targetAng : flowAngle(en);
+            if (sAng === null) sAng = steerAngle(en, dx, dy, d);
+            en.ax = Math.cos(sAng) * spd2 * 3.2;
+            en.ay = Math.sin(sAng) * spd2 * 3.2;
+            en.vx += en.ax * dt;
+            en.vy += en.ay * dt;
+            const esp = Math.hypot(en.vx, en.vy),
+              emax = spd2;
+            if (esp > emax) {
+              en.vx *= emax / esp;
+              en.vy *= emax / esp;
+            }
+            const minD = PR + en.r;
+            if (esp < 3 && d > minD) {
+              en.idle = (en.idle || 0) + dt;
+              if (en.idle > 0.45) {
+                en.vx += Math.cos(targetAng) * spd2;
+                en.vy += Math.sin(targetAng) * spd2;
+                en.idle = 0;
+              }
+            } else en.idle = 0;
+            en.x += en.vx * dt;
+            en.y += en.vy * dt;
+            worldBounce(en, en.r, en.ax, en.ay);
+            if (d < minD) {
+              const nx = dx / d,
+                ny = dy / d,
+                pen = minD - d;
+              player.x += nx * pen * 0.55;
+              player.y += ny * pen * 0.55;
+              en.x -= nx * pen * 0.45;
+              en.y -= ny * pen * 0.45;
+              if (player.ifr <= 0) {
+                reflect(player, -nx, -ny);
+                player.vx *= 0.5;
+                player.vy *= 0.5;
+                hurt(10, en.x, en.y);
+              }
+            }
+            en.fireT -= dt;
+            if (en.fireT <= 0 && d < 500) {
+              en.fireT = en.coreExposed ? 1.6 : 1.1;
+              spawnEbullet(en, targetAng);
+              spawnParticle(
+                en.x + Math.cos(targetAng) * en.r,
+                en.y + Math.sin(targetAng) * en.r,
+                "#f55",
+                0,
+              );
+            }
+            for (let k = i + 1; k < enemies.length; k++) {
+              const o = enemies[k];
+              if (o.hp <= 0) continue;
+              const ox = en.x - o.x,
+                oy = en.y - o.y,
+                od = Math.hypot(ox, oy),
+                need = en.r + o.r;
+              if (od < need && od > 0) {
+                const p = ((need - od) * 0.5) / od;
+                en.x += ox * p;
+                en.y += oy * p;
+                o.x -= ox * p;
+                o.y -= oy * p;
+              }
+            }
+          }
+          let ew = 0;
+          for (let i = 0; i < enemies.length; i++) {
+            if (enemies[i].hp > 0) {
+              if (ew !== i) enemies[ew] = enemies[i];
+              ew++;
+            } else {
+              retMask(enemies[i].mask);
+              enemies[i].mask = null;
+              enemies[i].mctx = null;
+            }
+          }
+          enemies.length = ew;
+          if (alive === 0 && allowWave) {
+            wave++;
+            newWave(3 + wave);
+          }
+
+          shake = Math.max(0, shake - dt * 30);
+          explosionZoom = Math.max(0, explosionZoom - dt * 0.6);
+          const leadX = player.x + player.vx * 0.25,
+            leadY = player.y + player.vy * 0.25;
+          cam.x += (leadX - cam.x) * Math.min(1, dt * 4);
+          cam.y += (leadY - cam.y) * Math.min(1, dt * 4);
+          const targetZoom = 1 - Math.min(0.18, sp * 0.0016) - explosionZoom;
+          cam.zoom += (targetZoom - cam.zoom) * Math.min(1, dt * 3);
+          const halfW = W / (2 * cam.zoom),
+            halfH = H / (2 * cam.zoom);
+          if (WW <= halfW * 2) cam.x = WW * 0.5;
+          else cam.x = Math.max(halfW, Math.min(WW - halfW, cam.x));
+          if (WH <= halfH * 2) cam.y = WH * 0.5;
+          else cam.y = Math.max(halfH, Math.min(WH - halfH, cam.y));
+        }
+
+        function syncHUD() {
+          const hp = Math.max(0, player.hp | 0);
+          if (hp !== lastHp) {
+            hudHp.textContent = hp;
+            lastHp = hp;
+          }
+          const h = player.heat | 0;
+          if (h !== lastHeat) {
+            heatFill.style.width = player.heat + "%";
+            lastHeat = h;
+          }
+          const sh = Math.max(0, player.shieldHp | 0);
+          if (sh !== lastShld) {
+            shldFill.style.width = (player.shieldHp / SHIELD_MAX) * 100 + "%";
+            lastShld = sh;
+          }
+          if (wave !== lastWave) {
+            hudWave.textContent = wave;
+            lastWave = wave;
+          }
+          if (score !== lastScore) {
+            hudScore.textContent = score;
+            lastScore = score;
+          }
+          const ws = weapon;
+          if (ws !== lastWpn) {
+            wpnEl.innerHTML =
+              "<span" +
+              (weapon === 0
+                ? "><b>[1]AUTOCANNON</b>"
+                : ' style="opacity:.55">[1]AUTOCANNON') +
+              "</span><span" +
+              (weapon === 1
+                ? "><b>[2]PLASMA</b>"
+                : ' style="opacity:.55">[2]PLASMA') +
+              "</span><span" +
+              (weapon === 2
+                ? "><b>[3]ROCKET</b>"
+                : ' style="opacity:.55">[3]ROCKET') +
+              "</span>";
+            lastWpn = ws;
+          }
+        }
+
+        function drawMech(p) {
+          const th = p.bodyAng,
+            ta = p.ang;
+          if (p.legs) {
+            ctx.save();
+            ctx.strokeStyle = p.overheat ? "#a44" : "#067a88";
+            ctx.lineWidth = 3.2;
+            ctx.lineCap = "round";
+            ctx.fillStyle = p.overheat ? "#f86" : "#00e5ff";
+            for (let i = 0; i < p.legs.length; i++) {
+              const L = p.legs[i],
+                h = hipOf(p, L.side);
+              ctx.beginPath();
+              ctx.moveTo(h[0], h[1]);
+              ctx.lineTo(L.fx, L.fy);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.arc(L.fx, L.fy, 3.1, 0, 6.283185);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.save();
+          ctx.rotate(th);
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = p.overheat ? "#f44" : "#0ff";
+          ctx.fillStyle = p.overheat ? "#a33" : "#063a44";
+          ctx.fillRect(-11, -11, 22, 22);
+          ctx.fillStyle = p.overheat ? "#ff6b4a" : "#00e5ff";
+          ctx.fillRect(-8, -8, 16, 16);
+          ctx.fillStyle = "#051014";
+          ctx.fillRect(-4, -7, 8, 7);
+          ctx.restore();
+          ctx.save();
+          ctx.rotate(ta);
+          const wg = ctx.createLinearGradient(6, 0, 26, 0);
+          if (weapon === 1) {
+            wg.addColorStop(0, "#044");
+            wg.addColorStop(1, "#7ff");
+          } else if (weapon === 2) {
+            wg.addColorStop(0, "#422");
+            wg.addColorStop(1, "#fa6");
+          } else {
+            wg.addColorStop(0, "#234");
+            wg.addColorStop(1, "#ffe27a");
+          }
+          ctx.fillStyle = wg;
+          ctx.fillRect(6, -3, 18, 6);
+          ctx.fillStyle = "#fff";
+          ctx.globalAlpha = 0.55;
+          ctx.fillRect(20, -1.5, 5, 3);
+          ctx.globalAlpha = 1;
+          ctx.restore();
+          ctx.restore();
+          if (p.shieldOn && p.shieldHp > 0) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            const a = 0.45 + 0.5 * (p.shieldHp / SHIELD_MAX);
+            ctx.strokeStyle = "rgba(0,229,255," + a + ")";
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#0ff";
+            ctx.beginPath();
+            ctx.arc(
+              0,
+              0,
+              26,
+              p.shieldAng - SHIELD_ARC,
+              p.shieldAng + SHIELD_ARC,
+            );
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+        function drawEnemy(en) {
+          if (en.hp <= 0) return;
+          ctx.save();
+          ctx.translate(en.x, en.y);
+          ctx.rotate(en.ang);
+          if (en.coreExposed) {
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = "#ff3b3b";
+            ctx.fillStyle = "#ff3b3b";
+            ctx.globalAlpha = 0.25 + 0.15 * Math.sin(performance.now() * 0.01);
+            ctx.beginPath();
+            ctx.arc(0, 0, en.r * 0.4, 0, 6.283185);
+            ctx.fill();
+            ctx.restore();
+            ctx.globalAlpha = 1;
+          }
+          if (en.maskDirty > 0) {
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#ffb347";
+            ctx.globalAlpha = 0.4;
+            ctx.drawImage(en.mask, -EMASK * 0.5, -EMASK * 0.5);
+            ctx.restore();
+          }
+          ctx.drawImage(en.mask, -EMASK * 0.5, -EMASK * 0.5);
+          if (en.type === 2 && en.shieldHp > 0) {
+            ctx.strokeStyle =
+              "rgba(120,200,255," + (0.3 + (0.5 * en.shieldHp) / 60) + ")";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, en.r + 6, 0, 6.283185);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        function render() {
+          ctx.fillStyle = "#111";
+          ctx.fillRect(0, 0, W, H);
+          ctx.save();
+          try {
+            const sx = (Math.random() - 0.5) * shake,
+              sy = (Math.random() - 0.5) * shake;
+            ctx.translate(W * 0.5 + sx, H * 0.5 + sy);
+            ctx.scale(cam.zoom, cam.zoom);
+            ctx.translate(-cam.x, -cam.y);
+            ctx.drawImage(world, 0, 0);
+            const vl = cam.x - W / cam.zoom,
+              vt = cam.y - H / cam.zoom,
+              vr = cam.x + W / cam.zoom,
+              vb = cam.y + H / cam.zoom;
+            function onscr(x, y, m) {
+              return x > vl - m && x < vr + m && y > vt - m && y < vb + m;
+            }
+            ctx.beginPath();
+            for (let i = 0; i < debris.length; i++) {
+              const d = debris[i];
+              if (d.active && onscr(d.x, d.y, 8)) {
+                ctx.moveTo(d.x + d.r, d.y);
+                ctx.arc(d.x, d.y, d.r, 0, 6.283185);
+              }
+            }
+            ctx.fillStyle = "#666";
+            ctx.fill();
+            // Impact sparks: plain alpha-blended circles, no shadowBlur (expensive,
+            // see below) and no 'lighter'/additive blending. 'lighter' makes
+            // overlapping same-colored shapes ADD their brightness, so a cluster of
+            // sparks - or a dense stream of bullets, below - blows out into a solid
+            // white glowing blob instead of reading as individual sparks/bullets.
+            // That's the "light flash" / "light shapes" artifact: it happens even to
+            // projectiles that haven't hit anything yet, purely from several of them
+            // overlapping on screen under additive blending. Normal blending caps
+            // out at each pixel's own alpha instead of stacking, so density no
+            // longer turns into a flashbulb.
+            for (let i = 0; i < particles.length; i++) {
+              const p = particles[i];
+              if (p.active && p.type === 0) {
+                ctx.globalAlpha = Math.max(0, p.life) * 0.9;
+                ctx.fillStyle = p.col;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 1.8, 0, 6.283185);
+                ctx.fill();
+              }
+            }
+            ctx.globalAlpha = 1;
+            for (let i = 0; i < particles.length; i++) {
+              const p = particles[i];
+              if (p.active && p.type === 1) {
+                ctx.globalAlpha = Math.max(0, p.life * 0.5);
+                ctx.fillStyle = p.col;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 6 + (0.9 - p.life) * 10, 0, 6.283185);
+                ctx.fill();
+              }
+            }
+            ctx.globalAlpha = 1;
+            for (let i = 0; i < particles.length; i++) {
+              const p = particles[i];
+              if (p.active && p.type === 2) {
+                ctx.globalAlpha = Math.max(0, p.life * 0.35);
+                ctx.fillStyle = "#aef";
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4 + (0.4 - p.life) * 8, 0, 6.283185);
+                ctx.fill();
+              }
+            }
+            ctx.globalAlpha = 1;
+            for (let i = 0; i < enemies.length; i++) {
+              const en = enemies[i];
+              if (en.hp > 0 && onscr(en.x, en.y, en.r + 8)) drawEnemy(en);
+            }
+            // Bullets: batched per color (one path+fill per "kind" instead of one
+            // per bullet) like debris above, and drawn as a soft low-alpha halo pass
+            // plus a crisp solid core pass - both still normal blending, so a dense
+            // stream of bullets in flight reads as a clean bright line/trail instead
+            // of a blown-out flash the moment two of them overlap on screen.
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = "#ffec7a";
+            ctx.beginPath();
+            for (let i = 0; i < bullets.length; i++) {
+              const b = bullets[i];
+              if (b.active && b.from === 1 && b.type !== 2) {
+                ctx.moveTo(b.x + 5.5, b.y);
+                ctx.arc(b.x, b.y, 5.5, 0, 6.283185);
+              }
+            }
+            ctx.fill();
+            ctx.fillStyle = "#f66";
+            ctx.beginPath();
+            for (let i = 0; i < bullets.length; i++) {
+              const b = bullets[i];
+              if (b.active && b.from === 2) {
+                ctx.moveTo(b.x + 5.5, b.y);
+                ctx.arc(b.x, b.y, 5.5, 0, 6.283185);
+              }
+            }
+            ctx.fill();
+            ctx.fillStyle = "#ffab5e";
+            ctx.beginPath();
+            for (let i = 0; i < bullets.length; i++) {
+              const b = bullets[i];
+              if (b.active && b.type === 2) {
+                ctx.moveTo(b.x + 8.5, b.y);
+                ctx.arc(b.x, b.y, 8.5, 0, 6.283185);
+              }
+            }
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = "#ffec7a";
+            ctx.beginPath();
+            for (let i = 0; i < bullets.length; i++) {
+              const b = bullets[i];
+              if (b.active && b.from === 1 && b.type !== 2) {
+                ctx.moveTo(b.x + 2.6, b.y);
+                ctx.arc(b.x, b.y, 2.6, 0, 6.283185);
+              }
+            }
+            ctx.fill();
+            ctx.fillStyle = "#f66";
+            ctx.beginPath();
+            for (let i = 0; i < bullets.length; i++) {
+              const b = bullets[i];
+              if (b.active && b.from === 2) {
+                ctx.moveTo(b.x + 2.6, b.y);
+                ctx.arc(b.x, b.y, 2.6, 0, 6.283185);
+              }
+            }
+            ctx.fill();
+            ctx.fillStyle = "#fff3d6";
+            ctx.beginPath();
+            for (let i = 0; i < bullets.length; i++) {
+              const b = bullets[i];
+              if (b.active && b.type === 2) {
+                ctx.moveTo(b.x + 4, b.y);
+                ctx.arc(b.x, b.y, 4, 0, 6.283185);
+              }
+            }
+            ctx.fill();
+            if (
+              weapon === 1 &&
+              (mouseDown || fireHeld || padFire) &&
+              !player.overheat
+            ) {
+              const bx = player.x + Math.cos(player.ang) * 340,
+                by = player.y + Math.sin(player.ang) * 340;
+              const pg = ctx.createLinearGradient(player.x, player.y, bx, by);
+              pg.addColorStop(0, "#bffcff");
+              pg.addColorStop(0.5, "#4ef");
+              pg.addColorStop(1, "#0ff0");
+              ctx.save();
+              ctx.globalAlpha = 0.28;
+              ctx.strokeStyle = pg;
+              ctx.lineWidth = 9;
+              ctx.beginPath();
+              ctx.moveTo(player.x, player.y);
+              ctx.lineTo(bx, by);
+              ctx.stroke();
+              ctx.globalAlpha = 1;
+              ctx.strokeStyle = "#bffcff";
+              ctx.lineWidth = 2.5;
+              ctx.stroke();
+              ctx.restore();
+            }
+            drawMech(player);
+            ctx.font = "bold 13px monospace";
+            ctx.textAlign = "center";
+            for (let i = 0; i < popups.length; i++) {
+              const pu = popups[i];
+              if (pu.active) {
+                ctx.globalAlpha = Math.max(0, pu.life / 0.6);
+                ctx.fillStyle = "#ffdf5e";
+                ctx.fillText(pu.txt, pu.x, pu.y);
+              }
+            }
+            ctx.globalAlpha = 1;
+          } finally {
+            ctx.restore();
+          }
+        }
+
+        function restart() {
+          stopAllLoops();
+          unlockAudio();
+          if (actx && actx.state === "suspended") actx.resume();
+          paused = 0;
+          menuEl.style.display = "none";
+          goEl.style.display = "none";
+          player.x = WW * 0.5;
+          player.y = WH * 0.5;
+          player.vx = 0;
+          player.vy = 0;
+          player.ax = 0;
+          player.ay = 0;
+          player.hp = 100;
+          player.heat = 0;
+          player.overheat = 0;
+          player.dead = 0;
+          player.ang = 0;
+          player.bodyAng = 0;
+          player.ifr = 0;
+          player.combo = 0;
+          player.comboTimer = 0;
+          player.shieldOn = 0;
+          player.shieldHp = SHIELD_MAX;
+          player.shieldHitT = 0;
+          player.dist = 0;
+          resetLegs(player);
+          wave = 1;
+          score = 0;
+          weapon = 0;
+          fireT = 0;
+          shake = 0;
+          explosionZoom = 0;
+          flashT = 0;
+          enemies.length = 0;
+          buildWorld();
+          navBuildAll();
+          newWave(3);
+          for (let i = 0; i < bullets.length; i++) bullets[i].active = 0;
+          for (let i = 0; i < debris.length; i++) debris[i].active = 0;
+          for (let i = 0; i < particles.length; i++) particles[i].active = 0;
+          for (let i = 0; i < popups.length; i++) popups[i].active = 0;
+          cam.x = player.x;
+          cam.y = player.y;
+          cam.zoom = 1;
+          lastHp = -1;
+          lastHeat = -1;
+          lastWave = -1;
+          lastScore = -1;
+          lastWpn = "";
+          lastShld = -1;
+          comboEl.style.opacity = "0";
+          flashEl.classList.remove("hit");
+          keys.w = keys.a = keys.s = keys.d = keys.shift = keys[" "] = 0;
+        }
+
+        function headlessTest() {
+          const saved = soundOn;
+          soundOn = 0;
+          allowWave = 0;
+          const ox = player.x,
+            oy = player.y;
+          player.hp = 100;
+          player.ifr = 0;
+          player.dead = 0;
+          player.shieldOn = 0;
+          player.shieldHp = SHIELD_MAX;
+          const hp0 = player.hp;
+          enemies.length = 0;
+          for (let i = 0; i < bullets.length; i++) bullets[i].active = 0;
+          keys.w = 1;
+          keys.d = 1;
+          mouseDown = 0;
+          fireHeld = 0;
+          moveVec.x = 0.7;
+          aimVec.x = 0.5;
+          aimVec.y = -0.4;
+          for (let i = 0; i < 12000; i++) {
+            update(0.016);
+            if (
+              !Number.isFinite(player.x) ||
+              !Number.isFinite(player.y) ||
+              !Number.isFinite(player.vx) ||
+              !Number.isFinite(player.vy)
+            )
+              throw new Error("NaN physics");
+            if (Math.abs(player.vx) > 2000 || Math.abs(player.vy) > 2000)
+              throw new Error("physics explosion");
+            const halfW = W / (2 * cam.zoom),
+              halfH = H / (2 * cam.zoom);
+            if (
+              WW > halfW * 2 &&
+              (cam.x < halfW - 1e-4 || cam.x > WW - halfW + 1e-4)
+            )
+              throw new Error("camera void X");
+            if (
+              WH > halfH * 2 &&
+              (cam.y < halfH - 1e-4 || cam.y > WH - halfH + 1e-4)
+            )
+              throw new Error("camera void Y");
+          }
+          if (player.hp !== hp0)
+            throw new Error("HP drain without collision " + player.hp);
+          if (Math.abs(player.x - ox) < 1 && Math.abs(player.y - oy) < 1)
+            throw new Error("stuck player");
+          if (voxelR(1, null) < voxelR(0, null) * 2)
+            throw new Error("plasma not wide");
+          if (voxelR(2, { r: 20 }) < 14) throw new Error("rocket not radial");
+          player.shieldHp = 0;
+          player.shieldOn = 0;
+          keys.shift = 0;
+          spawnEnemy(1, player.x + 8, player.y);
+          const hp1 = player.hp;
+          for (let i = 0; i < 30; i++) update(0.016);
+          if (player.hp >= hp1) throw new Error("no contact damage");
+          enemies.length = 0;
+          player.hp = 100;
+          player.dead = 0;
+          player.ifr = 0;
+          player.shieldHp = SHIELD_MAX;
+          player.shieldOn = 1;
+          player.shieldAng = 0;
+          keys.shift = 1;
+          const sh0 = player.shieldHp,
+            hpS = player.hp;
+          hurt(40, player.x + 30, player.y);
+          if (player.hp !== hpS) throw new Error("shield leaked HP");
+          if (player.shieldHp >= sh0) throw new Error("shield HP not consumed");
+          player.ifr = 0;
+          hurt(25, player.x - 30, player.y);
+          if (player.hp >= hpS) throw new Error("rear hit must bypass shield");
+          player.ifr = 0;
+          player.hp = 100;
+          player.shieldHp = SHIELD_MAX;
+          player.shieldOn = 0;
+          keys.shift = 0;
+          enemies.length = 0;
+          player.hp = 100;
+          player.dead = 0;
+          player.ifr = 0;
+          spawnEnemy(0, player.x + 80, player.y);
+          const en0 = enemies[0],
+            mhp = en0.hp,
+            ang0 = (en0.ang = 0.7);
+          eraseEnemyDeep(en0, en0.x + 6, en0.y, voxelR(0, en0), 80, 0);
+          damageEnemy(en0, en0.x + 4, en0.y, 12, voxelR(1, en0));
+          if (en0.hp >= mhp) throw new Error("destruction failed");
+          if (en0.ang !== ang0) throw new Error("mask rotated entity");
+          weapon = 0;
+          fireHeld = 0;
+          mouseDown = 1;
+          player.ang = 0;
+          for (let i = 0; i < 120; i++) update(0.016);
+          weapon = 1;
+          for (let i = 0; i < 40; i++) update(0.016);
+          weapon = 2;
+          for (let i = 0; i < 50; i++) update(0.016);
+          mouseDown = 0;
+          weapon = 0;
+          rocketExplode(player.x + 200, player.y);
+          for (let i = 0; i < 40; i++) update(0.016);
+          if (!Number.isFinite(player.x)) throw new Error("NaN after combat");
+          const hL = hipOf(player, -1),
+            hR = hipOf(player, 1);
+          if (!Number.isFinite(hL[0] + hL[1] + hR[0] + hR[1]))
+            throw new Error("IK hip NaN");
+          if (!player.legs || player.legs.length !== 2)
+            throw new Error("IK legs missing");
+          if (!Number.isFinite(player.legs[0].fx + player.legs[1].fy))
+            throw new Error("IK foot NaN");
+          const sg = (d) => Math.max(0, 1 - d / MAX_RANGE);
+          if (sg(0) !== 1 || sg(MAX_RANGE) !== 0 || sg(MAX_RANGE * 2) !== 0)
+            throw new Error("spatial gain");
+          plasmaHumStop();
+          stopAllLoops();
+          if (plasmaOsc) throw new Error("audio loop leak");
+          moveVec.x = 0;
+          moveVec.y = 0;
+          aimVec.x = 0;
+          aimVec.y = 0;
+          keys.w = keys.d = 0;
+          soundOn = saved;
+          allowWave = 1;
+          restart();
+          return "ok";
+        }
+
+        buildWorld();
+        navBuildAll();
+        newWave(3);
+        try {
+          headlessTest();
+        } catch (e) {
+          console.error(e);
+          restart();
+        }
+
+        function pollPad() {
+          try {
+            const pads = navigator.getGamepads && navigator.getGamepads();
+            if (!pads) return;
+            const g = pads[0];
+            if (!g) {
+              if (padMove) {
+                moveVec.x = 0;
+                moveVec.y = 0;
+                padMove = 0;
+              }
+              if (padAim) {
+                fireHeld = 0;
+                usingStickAim = false;
+                padAim = 0;
+              }
+              padFire = 0;
+              padShield = 0;
+              return;
+            }
+            const lx = g.axes[0] || 0,
+              ly = g.axes[1] || 0;
+            if (Math.abs(lx) > 0.2 || Math.abs(ly) > 0.2) {
+              moveVec.x = lx;
+              moveVec.y = ly;
+              padMove = 1;
+            } else if (padMove) {
+              moveVec.x = 0;
+              moveVec.y = 0;
+              padMove = 0;
+            }
+            if (g.axes.length > 3) {
+              const rx = g.axes[2] || 0,
+                ry = g.axes[3] || 0;
+              if (Math.abs(rx) > 0.2 || Math.abs(ry) > 0.2) {
+                player.ang = Math.atan2(ry, rx);
+                fireHeld = 1;
+                usingStickAim = true;
+                padAim = 1;
+              } else if (padAim) {
+                fireHeld = 0;
+                usingStickAim = false;
+                padAim = 0;
+              }
+            }
+            padFire =
+              (g.buttons[0] && g.buttons[0].pressed) ||
+              (g.buttons[7] && g.buttons[7].pressed)
+                ? 1
+                : 0;
+            padShield =
+              (g.buttons[4] && g.buttons[4].pressed) ||
+              (g.buttons[5] && g.buttons[5].pressed)
+                ? 1
+                : 0;
+          } catch (e) {}
+        }
+        function loop(t) {
+          if (paused) {
+            last = t;
+            requestAnimationFrame(loop);
+            return;
+          }
+          let dt = (t - last) * 0.001;
+          last = t;
+          if (dt > 0.033) dt = 0.033;
+          if (dt < 0) dt = 0;
+          pollPad();
+          update(dt);
+          syncHUD();
+          render();
+          requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+      })();
+    </script>
+  </body>
+</html>
