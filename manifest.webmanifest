@@ -1,0 +1,25 @@
+{
+  "name": "Metal Shatter Arena",
+  "short_name": "Shatter Arena",
+  "description": "Neon mech arena shooter with destructible voxel enemies. Play offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a0a0f",
+  "theme_color": "#00e5ff",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
